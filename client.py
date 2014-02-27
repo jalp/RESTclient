@@ -8,6 +8,7 @@ SERVER_URL = 'http://localhost/partnerprovisioning/v1/'
 # Default secured server
 SECURE_SERVER_URL = 'https://localhost/partnerprovisioning/v1/'
 DEFAULT_COLL = 'log/'
+COLLECTION = 'collection/'
 DEFAULT_URL = '{}{}'.format(SERVER_URL, DEFAULT_COLL)
 DEFAULT_SECURE_URL = '{}{}'.format(SECURE_SERVER_URL, DEFAULT_COLL)
 DEFAULT_HEADER = {'content-type': 'application/json'}
@@ -15,7 +16,7 @@ DEFAULT_HEADER = {'content-type': 'application/json'}
 
 class Client(object):
     """ Client class with all requests methods implemented
-    We use verify=False because we use selfsigned certs
+    We use verify=False because we use self-signed certs
     """
 
     def get(self, args):
@@ -64,14 +65,32 @@ class Client(object):
         else:
             return False
 
+    def getcollection(self, collection):
+        """ Get collection data
+        :collection: Collection to get. Optional param
+        """
+        if 'collection' in collection:
+            r = requests.get("{}{}".format(SERVER_URL, COLLECTION), verify=False)
+        else:
+            r = requests.get("{}{}{}".format(SERVER_URL, COLLECTION, collection), verify=False)
+
+        if r.status_code == 200:
+            return r.json()
+        else:
+            return 'ERROR: {0}. REASON: {1}'.format(r.status_code, r.text)
+
 
 if __name__ == "__main__":
 
     parser = ArgumentParser(description="REST client script")
-    parser.add_argument('-g', '--get', help='GET collection or log data information. Default collection: log')
+    # Log client
+    parser.add_argument('-g', '--get', help='GET log data information. Get all or unique data log', nargs='?')
     parser.add_argument('--post', help='POST log data')
     parser.add_argument('--put', help='Modify existing log data. First param log id, second data info', nargs=2)
     parser.add_argument('-d', '--delete', help='DELETE log')
+    # Collection client
+    parser.add_argument('-gc', help='GET collection data information', const='collection', nargs='?')
+
     args = parser.parse_args()
 
     # Client instance
@@ -85,5 +104,8 @@ if __name__ == "__main__":
         print client.put(args.put)
     elif args.delete:
         print client.delete(args.delete)
+    elif args.gc:
+        print client.getcollection(args.gc)
     else:
-        print 'Argument data is incorrect'
+        # Default, get all logs
+        print client.get(args.get)
